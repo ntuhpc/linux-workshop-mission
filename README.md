@@ -119,12 +119,12 @@ grep -i warn app.log | head -n 3   # the first 3 warnings
 
 Your mission is to find **4 secret fragments** hidden in a set of folders and files, then combine them into a flag. **You are being timed.** The clock starts when you run the start script and stops when you submit the correct flag.
 
-**Start** (if your instructor gives you a server address, run the `export` line first):
+**Start:**
 ```bash
-export MISSION_SERVER=http://<address-from-instructor>:8000
 cd ~/linux-workshop-mission      # the folder you cloned, where start_mission.py is
 python3 start_mission.py
 ```
+Only if your instructor gives you a server address: before `python3 start_mission.py`, run `export MISSION_SERVER=http://` followed by that address, e.g. `export MISSION_SERVER=http://10.0.0.5:8000`.
 This creates a **different** folder, `~/linux_mission` (with an underscore). That's where the mission happens: go in there and read the README.
 
 **Submit** (from `~/linux_mission`, keeping the single quotes):

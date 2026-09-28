@@ -19,7 +19,7 @@ import urllib.request
 from pathlib import Path
 
 # >>> Instructor: point this at the machine running server.py (from the linux-workshop-mission-admin repo) <<<
-SERVER_URL = os.environ.get("MISSION_SERVER", "http://127.0.0.1:8000")
+SERVER_URL = os.environ.get("MISSION_SERVER", "").strip() or "http://127.0.0.1:8000"
 
 MISSION = Path.home() / "linux_mission"
 TOKEN_FILE = Path.home() / ".linux_mission_token"  # proves to the server that you are you
@@ -50,13 +50,19 @@ def shell_is_inside(folder):
     return cwd == folder or folder in cwd.parents
 
 
+def looks_like_a_mission(folder):
+    """Any trace of a mission counts (people who broke theirs may have deleted parts), as does empty."""
+    markers = ("submit.py", "README.txt", ".bunker", "archives", "vault", "workshop")
+    return not any(folder.iterdir()) or any((folder / m).exists() for m in markers)
+
+
 def register(user, token):
     payload = json.dumps({"username": user, "hostname": socket.gethostname(), "token": token}).encode()
-    req = urllib.request.Request(SERVER_URL + "/api/start", data=payload,
-                                 headers={"Content-Type": "application/json"})
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # ignore http_proxy - the server is local
     try:
         try:
+            req = urllib.request.Request(SERVER_URL + "/api/start", data=payload,  # ValueError on a malformed URL
+                                         headers={"Content-Type": "application/json"})
             with opener.open(req, timeout=30) as r:
                 return json.load(r)
         except urllib.error.HTTPError as e:
@@ -73,6 +79,11 @@ def main():
     user = pwd.getpwuid(os.getuid()).pw_name  # same as `whoami`
     if MISSION.is_symlink():
         sys.exit(f"{MISSION} is a link to another folder. Remove the link with:  rm {MISSION}  and run this again.")
+    # A rebuild deletes the folder, so never delete something that isn't a mission (e.g. a git
+    # clone that ended up there). Checked before registering, so the timer doesn't start yet.
+    if MISSION.exists() and not looks_like_a_mission(MISSION):
+        sys.exit(f"{MISSION} already exists but isn't a mission folder, so it wasn't touched.\n"
+                 f"Move it out of the way with:  mv {MISSION} {MISSION}.old   and run this again.")
     res = register(user, load_token())
     if res["token"] != TOKEN_FILE.read_text().strip():
         save_token(res["token"])
