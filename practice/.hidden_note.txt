@@ -1,0 +1,2 @@
+You found the hidden note! Files whose names start with a dot are hidden.
+`ls` skips them; `ls -a` (or `ls -la`) shows them.

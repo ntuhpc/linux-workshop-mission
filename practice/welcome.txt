@@ -1,0 +1,9 @@
+Welcome to the penguin research station!
+
+This folder is your practice area. Nothing here is part of the mission,
+so feel free to experiment, break things, and try every command you learn.
+
+The big file, penguins.csv, is the colony's records: one penguin per line.
+It's too long to read with cat - that's what head, tail, grep and wc are for.
+
+Psst... there's also a hidden file in this folder. Can you find it?
