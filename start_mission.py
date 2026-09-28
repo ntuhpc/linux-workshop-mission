@@ -10,6 +10,7 @@ Running it again rebuilds the folder but does NOT reset your timer.
 import json
 import os
 import pwd
+import secrets
 import shutil
 import socket
 import sys
@@ -24,8 +25,32 @@ MISSION = Path.home() / "linux_mission"
 TOKEN_FILE = Path.home() / ".linux_mission_token"  # proves to the server that you are you
 
 
-def register(user):
-    token = TOKEN_FILE.read_text().strip() if TOKEN_FILE.exists() else ""
+def load_token():
+    """Read the saved token, or make and save a new one BEFORE contacting the server, so a lost
+    reply on the first run doesn't leave the server knowing a token that we don't."""
+    if TOKEN_FILE.exists():
+        return TOKEN_FILE.read_text().strip()
+    token = secrets.token_hex(16)
+    save_token(token)
+    return token
+
+
+def save_token(token):
+    old_umask = os.umask(0o077)
+    TOKEN_FILE.write_text(token + "\n")  # readable only by you
+    os.umask(old_umask)
+
+
+def shell_is_inside(folder):
+    """True if the terminal that ran us is inside `folder` (or in a folder that was deleted)."""
+    try:
+        cwd = Path(os.getcwd()).resolve()
+    except FileNotFoundError:  # e.g. still sitting in a mission folder deleted by a previous rebuild
+        return True
+    return cwd == folder or folder in cwd.parents
+
+
+def register(user, token):
     payload = json.dumps({"username": user, "hostname": socket.gethostname(), "token": token}).encode()
     req = urllib.request.Request(SERVER_URL + "/api/start", data=payload,
                                  headers={"Content-Type": "application/json"})
@@ -46,13 +71,16 @@ def register(user):
 
 def main():
     user = pwd.getpwuid(os.getuid()).pw_name  # same as `whoami`
-    res = register(user)
+    if MISSION.is_symlink():
+        sys.exit(f"{MISSION} is a link to another folder. Remove the link with:  rm {MISSION}  and run this again.")
+    res = register(user, load_token())
+    if res["token"] != TOKEN_FILE.read_text().strip():
+        save_token(res["token"])
 
-    old_umask = os.umask(0o077)
-    TOKEN_FILE.write_text(res["token"] + "\n")  # readable only by you
-    os.umask(old_umask)
-
-    if MISSION.exists():
+    rebuilt = MISSION.exists()
+    vault_was_open = (MISSION / "vault").exists()
+    stranded = rebuilt and shell_is_inside(MISSION.resolve())
+    if rebuilt:
         shutil.rmtree(MISSION)
     for rel, (content, mode) in res["files"].items():
         p = (MISSION / rel).resolve()
@@ -64,7 +92,15 @@ def main():
 
     print(f"Mission {'rebuilt (your timer was NOT reset)' if res['resumed'] else 'started'}, agent {user}!")
     print(f"Your mission folder is: {MISSION}")
-    print("Begin with:   cd ~/linux_mission   and then read README.txt")
+    if vault_was_open:
+        print("Everything was rebuilt from the start, so you'll need to unlock the vault again")
+        print("(the log is new, so count the ERROR lines again). Fragments you already found stay the same.")
+    if stranded:
+        print()
+        print("!! Your terminal is still inside the OLD folder, which no longer exists.")
+        print("!! Run this before anything else:   cd ~/linux_mission")
+    else:
+        print("Begin with:   cd ~/linux_mission   and then read README.txt")
 
 
 if __name__ == "__main__":

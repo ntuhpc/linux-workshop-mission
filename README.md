@@ -119,11 +119,13 @@ grep -i warn app.log | head -n 3   # the first 3 warnings
 
 Your mission is to find **4 secret fragments** hidden in a set of folders and files, then combine them into a flag. **You are being timed.** The clock starts when you run the start script and stops when you submit the correct flag.
 
-**Start:**
+**Start** (if your instructor gives you a server address, run the `export` line first):
 ```bash
+export MISSION_SERVER=http://<address-from-instructor>:8000
+cd ~/linux-workshop-mission      # the folder you cloned, where start_mission.py is
 python3 start_mission.py
 ```
-This creates `~/linux_mission`. Go in there and read the README.
+This creates a **different** folder, `~/linux_mission` (with an underscore). That's where the mission happens: go in there and read the README.
 
 **Submit** (from `~/linux_mission`, keeping the single quotes):
 ```bash
@@ -133,7 +135,7 @@ This creates `~/linux_mission`. Go in there and read the README.
 **Stuck?**
 - Read every file the mission gives you. All the instructions are in there.
 - Every script prints a hint when something's wrong. Read what it says!
-- Broke something? Run `python3 start_mission.py` again. It rebuilds your folder. Your timer **doesn't** reset, and your flag stays the same.
+- Broke something? Run `python3 start_mission.py` again (from `~/linux-workshop-mission`). It rebuilds your folder from the start, so you'll need to open the vault again. Your timer **doesn't** reset, and your flag stays the same.
 - Don't delete `~/.linux_mission_token`. It proves to the server that you are you.
 - Still stuck? Put your hand up.
 
